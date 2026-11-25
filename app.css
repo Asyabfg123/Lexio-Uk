@@ -78,6 +78,26 @@ button { font-family: inherit; }
   border-color: transparent;
 }
 
+.block-bar { display: flex; gap: 8px; align-items: stretch; }
+.block-bar .arrow { font-size: 20px; line-height: 1; padding: 0 14px; border-radius: 14px; }
+.block-bar .arrow:disabled { opacity: 0.35; }
+.block-select {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  text-align: center;
+  text-align-last: center;
+}
+
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mode-btn { font-size: 12px; font-weight: 600; }
 .mode-btn.active { background: var(--card-2); color: #fff; border-color: var(--accent-soft); }

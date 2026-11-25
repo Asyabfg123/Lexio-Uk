@@ -1,36 +1,44 @@
-// LexiGo — общий движок для starter.html и pro.html.
-// Каждая страница задаёт window.LEXI_CONFIG = { storageKey, levels: [{id, title}], words: [...] }
-// Формат слова: [en, транскрипция, перевод, пример EN, пример RU] внутри объекта уровня.
+// LexiGo — одно приложение, общий список слов от частых к редким, блоками по 100.
+// Слова лежат в words-NN.js (по 250 штук): каждый файл добавляет строки в window.LEXI_WORDS.
+// Формат строки: [английское слово, транскрипция с ударением, перевод, пример EN, пример RU]
 (function () {
   "use strict";
 
-  const CFG = window.LEXI_CONFIG;
+  const STORAGE = "lexigo_all_v1";
+  const BLOCK = 100;
 
-  // Разворачиваем компактный словарь в объекты
+  // ---------- Словарь ----------
   const WORDS = [];
-  for (const levelId of Object.keys(CFG.words)) {
-    CFG.words[levelId].forEach((row, i) => {
-      WORDS.push({
-        id: levelId.toLowerCase() + "_" + row[0],
-        level: levelId,
-        en: row[0], tr: row[1], ru: row[2], exEn: row[3], exRu: row[4]
-      });
-    });
+  const seen = new Set();
+  for (const r of window.LEXI_WORDS || []) {
+    const id = r[0].toLowerCase();
+    if (seen.has(id)) continue; // дубли пропускаем
+    seen.add(id);
+    WORDS.push({ id, n: WORDS.length + 1, en: r[0], tr: r[1], ru: r[2], exEn: r[3] || "", exRu: r[4] || "" });
   }
-  const BY_LEVEL = {};
-  for (const w of WORDS) (BY_LEVEL[w.level] = BY_LEVEL[w.level] || []).push(w);
+  const BLOCKS = [];
+  for (let i = 0; i < WORDS.length; i += BLOCK) BLOCKS.push(WORDS.slice(i, i + BLOCK));
 
   // ---------- Хранилище ----------
-  function loadSaved() {
-    try { return JSON.parse(localStorage.getItem(CFG.storageKey)) || {}; } catch (e) { return {}; }
+  function readJSON(key) {
+    try { return JSON.parse(localStorage.getItem(key)) || null; } catch (e) { return null; }
   }
-  const saved = loadSaved();
+  let saved = readJSON(STORAGE);
+  if (!saved) {
+    // переносим прогресс из старых Starter / Pro
+    const known = [];
+    for (const k of ["lexistarter_v2", "lexipro_v2"]) {
+      const old = readJSON(k);
+      if (old && old.known) old.known.forEach(id => known.push(id.replace(/^[abc][12]_/, "")));
+    }
+    saved = { known };
+  }
 
   const state = {
-    level: BY_LEVEL[saved.level] ? saved.level : CFG.levels[0].id,
+    block: 0,
     mode: ["cards", "ru2en", "en2ru"].includes(saved.mode) ? saved.mode : "cards",
     lang: saved.lang === "en-US" ? "en-US" : "en-GB",
-    known: new Set(saved.known || []),
+    known: new Set((saved.known || []).filter(id => seen.has(id))),
     queue: [],
     word: null,
     flipped: false,
@@ -39,12 +47,19 @@
     options: []
   };
 
+  function knownIn(block) { return BLOCKS[block].filter(w => state.known.has(w.id)).length; }
+  function firstUnfinished() {
+    for (let i = 0; i < BLOCKS.length; i++) if (knownIn(i) < BLOCKS[i].length) return i;
+    return 0;
+  }
+  state.block = Number.isInteger(saved.block) && BLOCKS[saved.block] ? saved.block : firstUnfinished();
+
   function persist() {
     try {
-      localStorage.setItem(CFG.storageKey, JSON.stringify({
-        level: state.level, mode: state.mode, lang: state.lang, known: [...state.known]
+      localStorage.setItem(STORAGE, JSON.stringify({
+        block: state.block, mode: state.mode, lang: state.lang, known: [...state.known]
       }));
-    } catch (e) { /* приватный режим и т.п. — просто не сохраняем */ }
+    } catch (e) { /* приватный режим — просто не сохраняем */ }
   }
 
   // ---------- Утилиты ----------
@@ -57,17 +72,15 @@
     return a;
   }
 
-  // Очередь: сначала невыученные слова (в случайном порядке), потом выученные — для повторения
+  // Очередь блока: сначала невыученные, потом выученные — для повторения
   function buildQueue() {
-    const pool = BY_LEVEL[state.level];
-    const fresh = shuffle(pool.filter(w => !state.known.has(w.id)));
-    const learned = shuffle(pool.filter(w => state.known.has(w.id)));
-    state.queue = fresh.concat(learned);
+    const pool = BLOCKS[state.block];
+    state.queue = shuffle(pool.filter(w => !state.known.has(w.id)))
+      .concat(shuffle(pool.filter(w => state.known.has(w.id))));
   }
 
   function nextWord() {
     if (!state.queue.length) buildQueue();
-    // не показываем одно и то же слово два раза подряд
     if (state.word && state.queue.length > 1 && state.queue[0].id === state.word.id) {
       state.queue.push(state.queue.shift());
     }
@@ -78,21 +91,18 @@
     state.options = [];
   }
 
-  // Слово, которое ещё не выучено, возвращается в очередь через пару карточек
-  function requeue(word) {
-    const pos = Math.min(3, state.queue.length);
-    state.queue.splice(pos, 0, word);
-  }
+  function requeue(word) { state.queue.splice(Math.min(3, state.queue.length), 0, word); }
+  function markKnown(w) { state.known.add(w.id); persist(); }
+  function markUnknown(w) { state.known.delete(w.id); persist(); }
 
-  function markKnown(word) { state.known.add(word.id); persist(); }
-  function markUnknown(word) { state.known.delete(word.id); persist(); }
-
+  // Неправильные варианты — из того же и соседних блоков, чтобы сложность была похожей
   function buildOptions(word, mode) {
     const key = mode === "ru2en" ? "en" : "ru";
+    const near = [];
+    for (let b = state.block - 1; b <= state.block + 1; b++) if (BLOCKS[b]) near.push(...BLOCKS[b]);
     const used = new Set([word[key]]);
     const picks = [];
-    const candidates = shuffle(BY_LEVEL[word.level]).concat(shuffle(WORDS));
-    for (const w of candidates) {
+    for (const w of shuffle(near)) {
       if (picks.length === 3) break;
       if (w.id === word.id || used.has(w[key])) continue;
       used.add(w[key]);
@@ -111,9 +121,7 @@
     "en-US": ["Samantha", "Alex", "Ava", "Allison", "Tom", "Google US English"]
   };
   let voices = [];
-  function loadVoices() {
-    if ("speechSynthesis" in window) voices = window.speechSynthesis.getVoices() || [];
-  }
+  function loadVoices() { if ("speechSynthesis" in window) voices = window.speechSynthesis.getVoices() || []; }
   function pickVoice(lang) {
     const norm = v => (v.lang || "").replace("_", "-").toLowerCase();
     const exact = voices.filter(v => norm(v) === lang.toLowerCase());
@@ -143,13 +151,26 @@
   // ---------- Отрисовка ----------
   const $ = id => document.getElementById(id);
 
+  function blockLabel(i) {
+    const from = i * BLOCK + 1;
+    const to = from + BLOCKS[i].length - 1;
+    const k = knownIn(i);
+    return `Слова ${from}–${to} · ${k === BLOCKS[i].length ? "✓" : k + "/" + BLOCKS[i].length}`;
+  }
+
   function renderChrome() {
-    const pool = BY_LEVEL[state.level];
-    const knownInLevel = pool.filter(w => state.known.has(w.id)).length;
+    const sel = $("blockSelect");
+    sel.innerHTML = BLOCKS.map((_, i) => `<option value="${i}">${blockLabel(i)}</option>`).join("");
+    sel.value = String(state.block);
+    $("prevBlock").disabled = state.block === 0;
+    $("nextBlock").disabled = state.block === BLOCKS.length - 1;
+
+    const k = knownIn(state.block);
+    const total = BLOCKS[state.block].length;
+    $("progressText").textContent = `Блок: ${k} / ${total}`;
+    $("progressFill").style.width = `${(k / total) * 100}%`;
+    $("totalBadge").textContent = `${state.known.size} / ${WORDS.length}`;
     $("accentBtn").textContent = state.lang === "en-GB" ? "🇬🇧 UK" : "🇺🇸 US";
-    $("progressText").textContent = `Выучено ${knownInLevel} / ${pool.length}`;
-    $("progressFill").style.width = `${(knownInLevel / pool.length) * 100}%`;
-    document.querySelectorAll(".level-btn").forEach(b => b.classList.toggle("active", b.dataset.level === state.level));
     document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === state.mode));
   }
 
@@ -157,15 +178,14 @@
     stage.innerHTML = `
       <div class="flashcard" id="flashcard">
         <div>
-          <div class="label">Уровень ${w.level}${state.known.has(w.id) ? " · повторение" : ""}</div>
+          <div class="label">№ ${w.n}${state.known.has(w.id) ? " · повторение" : ""}</div>
           <div class="word-en">${w.en}</div>
           <div class="ru-trans">${w.tr}</div>
           <div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 Прослушать</button></div>
           ${state.flipped ? `
             <div class="answer-box">
               <div class="word-ru">${w.ru}</div>
-              <div class="example-en">${w.exEn}</div>
-              <div class="example-ru">${w.exRu}</div>
+              ${w.exEn ? `<div class="example-en">${w.exEn}</div><div class="example-ru">${w.exRu}</div>` : ""}
             </div>` : ""}
         </div>
         <div class="hint">${state.flipped ? "Нажми на карточку, чтобы скрыть перевод" : "Нажми на карточку, чтобы увидеть перевод"}</div>
@@ -239,61 +259,59 @@
 
   function render() {
     renderChrome();
-    const stage = $("stage");
-    if (state.mode === "cards") renderCards(stage, state.word);
-    else renderQuiz(stage, state.word);
+    if (state.mode === "cards") renderCards($("stage"), state.word);
+    else renderQuiz($("stage"), state.word);
   }
 
-  // ---------- Шапка ----------
-  function buildChrome() {
-    const lv = $("levelsBar");
-    lv.style.gridTemplateColumns = `repeat(${CFG.levels.length}, 1fr)`;
-    lv.innerHTML = CFG.levels.map(l =>
-      `<button class="level-btn" data-level="${l.id}" type="button">${l.id}<small>${l.title} · ${BY_LEVEL[l.id].length}</small></button>`
-    ).join("");
-
-    lv.addEventListener("click", e => {
-      const b = e.target.closest(".level-btn");
-      if (!b || b.dataset.level === state.level) return;
-      state.level = b.dataset.level;
-      persist();
-      state.word = null;
-      buildQueue();
-      nextWord();
-      render();
-    });
-
-    $("modesBar").addEventListener("click", e => {
-      const b = e.target.closest(".mode-btn");
-      if (!b) return;
-      state.mode = b.dataset.mode;
-      persist();
-      state.flipped = false;
-      state.answered = false;
-      state.selectedIdx = null;
-      state.options = [];
-      render();
-    });
-
-    $("accentBtn").addEventListener("click", () => {
-      state.lang = state.lang === "en-GB" ? "en-US" : "en-GB";
-      persist();
-      renderChrome();
-      if (state.word) speak(state.word.en);
-    });
-
-    $("resetBtn").addEventListener("click", () => {
-      if (!confirm(`Сбросить прогресс уровня ${state.level}?`)) return;
-      BY_LEVEL[state.level].forEach(w => state.known.delete(w.id));
-      persist();
-      state.word = null;
-      buildQueue();
-      nextWord();
-      render();
-    });
+  function goToBlock(i) {
+    if (!BLOCKS[i] || i === state.block) return;
+    state.block = i;
+    persist();
+    state.word = null;
+    buildQueue();
+    nextWord();
+    render();
   }
 
-  buildChrome();
+  // ---------- Управление ----------
+  $("blockSelect").addEventListener("change", e => goToBlock(Number(e.target.value)));
+  $("prevBlock").addEventListener("click", () => goToBlock(state.block - 1));
+  $("nextBlock").addEventListener("click", () => goToBlock(state.block + 1));
+
+  $("modesBar").addEventListener("click", e => {
+    const b = e.target.closest(".mode-btn");
+    if (!b) return;
+    state.mode = b.dataset.mode;
+    persist();
+    state.flipped = false;
+    state.answered = false;
+    state.selectedIdx = null;
+    state.options = [];
+    render();
+  });
+
+  $("accentBtn").addEventListener("click", () => {
+    state.lang = state.lang === "en-GB" ? "en-US" : "en-GB";
+    persist();
+    renderChrome();
+    if (state.word) speak(state.word.en);
+  });
+
+  $("resetBtn").addEventListener("click", () => {
+    const from = state.block * BLOCK + 1;
+    if (!confirm(`Сбросить прогресс слов ${from}–${from + BLOCKS[state.block].length - 1}?`)) return;
+    BLOCKS[state.block].forEach(w => state.known.delete(w.id));
+    persist();
+    state.word = null;
+    buildQueue();
+    nextWord();
+    render();
+  });
+
+  if (!WORDS.length) {
+    $("stage").innerHTML = `<div class="quiz-card"><div class="feedback">Словарь не загрузился. Обнови страницу.</div></div>`;
+    return;
+  }
   buildQueue();
   nextWord();
   render();
