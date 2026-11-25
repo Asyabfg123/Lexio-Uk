@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Lexi Starter" />
+  <meta name="theme-color" content="#0b1120" />
+  <link rel="apple-touch-icon" href="icon-starter.png" />
+  <link rel="icon" href="icon-starter.png" />
+  <title>Lexi Starter</title>
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    :root { --accent: #10b981; --accent-soft: #6ee7b7; --accent-ink: #052e16; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <a class="brand" href="./">Lexi<span>Starter</span> <small>A1–A2</small></a>
+      <div class="top-controls">
+        <button class="pill-btn" id="accentBtn" type="button">🇬🇧 UK</button>
+        <button class="pill-btn" id="resetBtn" type="button">Сброс</button>
+      </div>
+    </div>
+
+    <div class="levels" id="levelsBar"></div>
+
+    <div class="modes" id="modesBar">
+      <button class="mode-btn" data-mode="cards" type="button">1. Карточки</button>
+      <button class="mode-btn" data-mode="ru2en" type="button">2. Рус → Англ</button>
+      <button class="mode-btn" data-mode="en2ru" type="button">3. Англ → Рус</button>
+    </div>
+
+    <div class="progress-wrap">
+      <span id="progressText"></span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="stage"></div>
+    <div class="footer-note">Заглавными буквами выделен ударный слог</div>
+  </div>
+
+  <script>
+    // [английское слово, транскрипция с ударением, перевод, пример EN, пример RU]
+    window.LEXI_CONFIG = {
+      storageKey: "lexistarter_v2",
+      levels: [
+        { id: "A1", title: "Базовый" },
+        { id: "A2", title: "Элементарный" }
+      ],
+      words: {
+        A1: [
+          ["family", "[ФЭ-ми-ли]", "семья", "My family lives in Bristol.", "Моя семья живёт в Бристоле."],
+          ["friend", "[ФРЕНД]", "друг", "She is my best friend.", "Она моя лучшая подруга."],
+          ["house", "[ХАУС]", "дом", "Their house is near the river.", "Их дом рядом с рекой."],
+          ["water", "[УО-тэ]", "вода", "Can I have a glass of water?", "Можно мне стакан воды?"],
+          ["morning", "[МО-нин]", "утро", "I drink tea every morning.", "Я пью чай каждое утро."],
+          ["evening", "[ИВ-нин]", "вечер", "See you this evening!", "Увидимся сегодня вечером!"],
+          ["tomorrow", "[тэ-МО-роу]", "завтра", "I'll call you tomorrow.", "Я позвоню тебе завтра."],
+          ["breakfast", "[БРЕК-фэст]", "завтрак", "We have breakfast at eight.", "Мы завтракаем в восемь."],
+          ["question", "[КВЕС-чэн]", "вопрос", "Can I ask a quick question?", "Можно задать быстрый вопрос?"],
+          ["answer", "[АН-сэ]", "ответ; отвечать", "Please answer my message.", "Пожалуйста, ответь на моё сообщение."],
+          ["listen", "[ЛИ-сн]", "слушать", "Listen carefully to the teacher.", "Слушай учителя внимательно."],
+          ["learn", "[ЛЁН]", "учить, изучать", "I want to learn English.", "Я хочу выучить английский."],
+          ["understand", "[ан-дэ-СТЭНД]", "понимать", "I don't understand this word.", "Я не понимаю это слово."],
+          ["remember", "[ри-МЕМ-бэ]", "помнить", "Do you remember his name?", "Ты помнишь его имя?"],
+          ["buy", "[БАЙ]", "покупать", "I need to buy some bread.", "Мне нужно купить хлеба."],
+          ["shop", "[ШОП]", "магазин", "The shop closes at six.", "Магазин закрывается в шесть."],
+          ["money", "[МА-ни]", "деньги", "I don't have much money today.", "У меня сегодня мало денег."],
+          ["colour", "[КА-лэ]", "цвет", "What colour is your coat?", "Какого цвета твоё пальто?"],
+          ["favourite", "[ФЕЙ-вэ-рит]", "любимый", "Tea is my favourite drink.", "Чай — мой любимый напиток."],
+          ["beautiful", "[БЬЮ-ти-фл]", "красивый", "What a beautiful garden!", "Какой красивый сад!"],
+          ["important", "[им-ПО-тэнт]", "важный", "This is an important detail.", "Это важная деталь."],
+          ["together", "[тэ-ГЕ-зэ]", "вместе", "Let's walk together to the station.", "Давай пойдём вместе до станции."],
+          ["often", "[О-фн]", "часто", "I often read before bed.", "Я часто читаю перед сном."],
+          ["holiday", "[ХО-ли-дэй]", "отпуск, каникулы", "We're going on holiday in July.", "Мы едем в отпуск в июле."],
+          ["country", "[КАН-три]", "страна", "The UK is a rainy country.", "Великобритания — дождливая страна."]
+        ],
+        A2: [
+          ["schedule", "[ШЕ-дьюл]", "расписание", "My schedule is busy this week.", "У меня плотное расписание на этой неделе."],
+          ["journey", "[ДЖЁ-ни]", "поездка, путешествие", "The journey takes two hours.", "Поездка занимает два часа."],
+          ["travel", "[ТРЭ-вл]", "путешествовать", "We love to travel by train.", "Мы любим путешествовать на поезде."],
+          ["weather", "[УЭ-зэ]", "погода", "The weather in London changes fast.", "Погода в Лондоне быстро меняется."],
+          ["autumn", "[О-тэм]", "осень", "Leaves fall in autumn.", "Осенью опадают листья."],
+          ["flat", "[ФЛЭТ]", "квартира", "They rent a small flat near the park.", "Они снимают маленькую квартиру у парка."],
+          ["lift", "[ЛИФТ]", "лифт", "Take the lift to the fifth floor.", "Поднимись на лифте на пятый этаж."],
+          ["neighbour", "[НЕЙ-бэ]", "сосед", "Our neighbour has a big dog.", "У нашего соседа большая собака."],
+          ["queue", "[КЬЮ]", "очередь", "There was a long queue for the bus.", "На автобус была длинная очередь."],
+          ["rubbish", "[РА-биш]", "мусор", "Please take out the rubbish.", "Пожалуйста, вынеси мусор."],
+          ["receipt", "[ри-СИТ]", "чек, квитанция", "Can I have a receipt, please?", "Можно мне чек, пожалуйста?"],
+          ["borrow", "[БО-роу]", "брать взаймы, одалживать", "Can I borrow your umbrella?", "Можно одолжить твой зонт?"],
+          ["decide", "[ди-САЙД]", "решать", "We haven't decided where to go.", "Мы ещё не решили, куда пойти."],
+          ["forget", "[фэ-ГЕТ]", "забывать", "Don't forget to lock the door.", "Не забудь запереть дверь."],
+          ["happen", "[ХЭ-пэн]", "случаться, происходить", "What happened at the meeting?", "Что случилось на встрече?"],
+          ["prepare", "[при-ПЭА]", "готовить, подготавливать", "I need to prepare for the exam.", "Мне нужно подготовиться к экзамену."],
+          ["improve", "[им-ПРУВ]", "улучшать", "Reading helps improve your English.", "Чтение помогает улучшить английский."],
+          ["suggest", "[сэ-ДЖЕСТ]", "предлагать, советовать", "What do you suggest we do?", "Что ты предлагаешь сделать?"],
+          ["explain", "[ик-СПЛЕЙН]", "объяснять", "Can you explain the rules again?", "Можешь ещё раз объяснить правила?"],
+          ["invite", "[ин-ВАЙТ]", "приглашать", "They invited us to dinner.", "Они пригласили нас на ужин."],
+          ["experience", "[ик-СПИ-ри-энс]", "опыт", "She has great work experience.", "У неё большой опыт работы."],
+          ["different", "[ДИФ-рэнт]", "разный, другой", "This book is different from that one.", "Эта книга отличается от той."],
+          ["dangerous", "[ДЕЙН-джэ-рэс]", "опасный", "This road is dangerous at night.", "Эта дорога опасна ночью."],
+          ["enough", "[и-НАФ]", "достаточно", "Do we have enough time?", "У нас достаточно времени?"],
+          ["probably", "[ПРО-бэб-ли]", "вероятно, наверное", "It will probably rain later.", "Позже, наверное, пойдёт дождь."]
+        ]
+      }
+    };
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

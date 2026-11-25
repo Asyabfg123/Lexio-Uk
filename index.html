@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="LexiGo" />
+  <meta name="theme-color" content="#0b1120" />
+  <link rel="apple-touch-icon" href="icon-starter.png" />
+  <title>LexiGo</title>
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    :root { --accent: #3b82f6; --accent-soft: #93c5fd; --accent-ink: #fff; }
+    .hero { text-align: center; padding: 28px 0 8px; }
+    .hero h1 { font-size: 34px; margin: 0 0 6px; letter-spacing: -0.02em; }
+    .hero h1 span { color: var(--accent-soft); }
+    .hero p { color: var(--muted); margin: 0; font-size: 15px; }
+    .app-link {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; color: var(--text); text-decoration: none;
+    }
+    .app-link:active { transform: scale(0.98); }
+    .app-link img { width: 60px; height: 60px; border-radius: 14px; flex: none; }
+    .app-link b { display: block; font-size: 18px; margin-bottom: 3px; }
+    .app-link span { color: var(--muted); font-size: 13px; line-height: 1.35; }
+    .how { background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius); padding: 14px 16px; font-size: 13px; color: var(--muted); line-height: 1.5; }
+    .how b { color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <h1>Lexi<span>Go</span></h1>
+      <p>Английские слова · британское произношение</p>
+    </div>
+
+    <a class="app-link" href="starter.html">
+      <img src="icon-starter.png" alt="" />
+      <div><b>Lexi Starter</b><span>Уровни A1–A2 · базовая лексика для быта, поездок и простых диалогов</span></div>
+    </a>
+
+    <a class="app-link" href="pro.html">
+      <img src="icon-pro.png" alt="" />
+      <div><b>Lexi Pro</b><span>Уровни B1–C1 · продвинутая лексика, нюансы, деловой английский</span></div>
+    </a>
+
+    <div class="how">
+      <b>Как добавить на экран «Домой»:</b> открой нужное приложение в Safari → кнопка «Поделиться» → «На экран „Домой“». Сделай это отдельно для Starter и для Pro — получится два значка.
+    </div>
+  </div>
+</body>
+</html>

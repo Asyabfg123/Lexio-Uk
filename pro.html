@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Lexi Pro" />
+  <meta name="theme-color" content="#090d16" />
+  <link rel="apple-touch-icon" href="icon-pro.png" />
+  <link rel="icon" href="icon-pro.png" />
+  <title>Lexi Pro</title>
+  <link rel="stylesheet" href="app.css" />
+  <style>
+    :root { --bg: #090d16; --bg-2: #11182c; --accent: #8b5cf6; --accent-soft: #c4b5fd; --accent-ink: #ffffff; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="top-bar">
+      <a class="brand" href="./">Lexi<span>Pro</span> <small>B1–C1</small></a>
+      <div class="top-controls">
+        <button class="pill-btn" id="accentBtn" type="button">🇬🇧 UK</button>
+        <button class="pill-btn" id="resetBtn" type="button">Сброс</button>
+      </div>
+    </div>
+
+    <div class="levels" id="levelsBar"></div>
+
+    <div class="modes" id="modesBar">
+      <button class="mode-btn" data-mode="cards" type="button">1. Карточки</button>
+      <button class="mode-btn" data-mode="ru2en" type="button">2. Рус → Англ</button>
+      <button class="mode-btn" data-mode="en2ru" type="button">3. Англ → Рус</button>
+    </div>
+
+    <div class="progress-wrap">
+      <span id="progressText"></span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="stage"></div>
+    <div class="footer-note">Заглавными буквами выделен ударный слог</div>
+  </div>
+
+  <script>
+    // [английское слово, транскрипция с ударением, перевод, пример EN, пример RU]
+    window.LEXI_CONFIG = {
+      storageKey: "lexipro_v2",
+      levels: [
+        { id: "B1", title: "Средний" },
+        { id: "B2", title: "Выше среднего" },
+        { id: "C1", title: "Продвинутый" }
+      ],
+      words: {
+        B1: [
+          ["achieve", "[э-ЧИВ]", "достигать", "You can achieve your goals.", "Ты можешь достичь своих целей."],
+          ["require", "[ри-КУАЙ-э]", "требовать", "This task requires patience.", "Эта задача требует терпения."],
+          ["avoid", "[э-ВОЙД]", "избегать", "Try to avoid common mistakes.", "Старайся избегать типичных ошибок."],
+          ["reliable", "[ри-ЛАЙ-э-бл]", "надёжный", "He is a reliable colleague.", "Он надёжный коллега."],
+          ["behaviour", "[би-ХЕЙ-вьэ]", "поведение", "His behaviour surprised everyone.", "Его поведение всех удивило."],
+          ["programme", "[ПРОУ-грэм]", "программа, телепередача", "Did you watch that new programme?", "Ты смотрел ту новую передачу?"],
+          ["advantage", "[эд-ВАН-тидж]", "преимущество", "Speaking English is a big advantage.", "Знание английского — большое преимущество."],
+          ["manage", "[МЭ-нидж]", "справляться, суметь", "How did you manage to finish on time?", "Как тебе удалось закончить вовремя?"],
+          ["mention", "[МЕН-шн]", "упоминать", "She didn't mention the price.", "Она не упомянула цену."],
+          ["support", "[сэ-ПОТ]", "поддерживать; поддержка", "Thank you for your support.", "Спасибо за поддержку."],
+          ["opportunity", "[о-пэ-ТЬЮ-нэ-ти]", "возможность", "It's a great opportunity to learn.", "Это отличная возможность научиться."],
+          ["compare", "[кэм-ПЭА]", "сравнивать", "Compare the two options carefully.", "Внимательно сравни два варианта."],
+          ["describe", "[ди-СКРАЙБ]", "описывать", "Can you describe what it looks like?", "Можешь описать, как это выглядит?"],
+          ["encourage", "[ин-КА-ридж]", "поощрять, ободрять", "Good teachers encourage curiosity.", "Хорошие учителя поощряют любознательность."],
+          ["reduce", "[ри-ДЬЮС]", "сокращать, уменьшать", "We want to reduce our expenses.", "Мы хотим сократить расходы."],
+          ["decision", "[ди-СИ-жн]", "решение (выбор)", "We made a quick decision.", "Мы быстро приняли решение."],
+          ["solution", "[сэ-ЛУ-шн]", "решение (проблемы)", "We need a solution to this problem.", "Нам нужно решение этой проблемы."],
+          ["appointment", "[э-ПОЙНТ-мэнт]", "запись, приём (у врача и т.п.)", "I have a dentist appointment at ten.", "У меня запись к стоматологу на десять."],
+          ["complain", "[кэм-ПЛЕЙН]", "жаловаться", "He always complains about the food.", "Он вечно жалуется на еду."],
+          ["increase", "[ин-КРИС]", "увеличивать(ся)", "Prices increased last month.", "В прошлом месяце цены выросли."],
+          ["recognise", "[РЕ-кэг-найз]", "узнавать, признавать", "I didn't recognise you with glasses!", "Я не узнал тебя в очках!"],
+          ["realise", "[РИ-э-лайз]", "осознавать, понимать", "I didn't realise it was so late.", "Я не понял, что уже так поздно."],
+          ["confident", "[КОН-фи-дэнт]", "уверенный", "She feels confident about the exam.", "Она уверена в себе перед экзаменом."],
+          ["environment", "[ин-ВАЙ-рэн-мэнт]", "окружающая среда, обстановка", "We must protect the environment.", "Мы должны беречь окружающую среду."],
+          ["aware", "[э-УЭА]", "осведомлённый, знающий", "Are you aware of the risks?", "Ты знаешь о рисках?"]
+        ],
+        B2: [
+          ["consequence", "[КОН-си-куэнс]", "последствие", "Every action has a consequence.", "У каждого поступка есть последствия."],
+          ["efficient", "[и-ФИ-шнт]", "эффективный", "We need a more efficient system.", "Нам нужна более эффективная система."],
+          ["accurate", "[Э-кью-рэт]", "точный", "Make sure the data is accurate.", "Убедись, что данные точные."],
+          ["maintain", "[мэйн-ТЕЙН]", "поддерживать, сохранять", "It's hard to maintain focus.", "Трудно сохранять концентрацию."],
+          ["enormous", "[и-НО-мэс]", "огромный", "They face an enormous challenge.", "Перед ними огромная задача."],
+          ["thorough", "[ЗА-рэ]", "тщательный", "Do a thorough check before sending.", "Тщательно проверь перед отправкой."],
+          ["assess", "[э-СЕС]", "оценивать", "We need to assess the risks first.", "Сначала нужно оценить риски."],
+          ["justify", "[ДЖАС-ти-фай]", "оправдывать, обосновывать", "How do you justify that decision?", "Чем ты обосновываешь это решение?"],
+          ["significant", "[сиг-НИ-фи-кэнт]", "значительный", "There is a significant difference.", "Разница значительная."],
+          ["reluctant", "[ри-ЛАК-тэнт]", "неохотный, не желающий", "He was reluctant to leave.", "Ему не хотелось уходить."],
+          ["implement", "[ИМ-пли-мент]", "внедрять, реализовывать", "They plan to implement new rules.", "Они планируют внедрить новые правила."],
+          ["persuade", "[пэ-СУЕЙД]", "убеждать", "Nothing could persuade him to stay.", "Ничто не могло убедить его остаться."],
+          ["obstacle", "[ОБ-стэ-кл]", "препятствие", "Language can be an obstacle at first.", "Поначалу язык может быть препятствием."],
+          ["sufficient", "[сэ-ФИ-шнт]", "достаточный", "Two hours should be sufficient.", "Двух часов должно хватить."],
+          ["adapt", "[э-ДЭПТ]", "приспосабливаться", "Animals adapt to new climates.", "Животные приспосабливаются к новому климату."],
+          ["approach", "[э-ПРОУЧ]", "подход; приближаться", "I like your approach to the problem.", "Мне нравится твой подход к проблеме."],
+          ["crucial", "[КРУ-шл]", "решающий, ключевой", "Timing is crucial in business.", "В бизнесе время играет ключевую роль."],
+          ["emphasise", "[ЭМ-фэ-сайз]", "подчёркивать, акцентировать", "She emphasised the need for safety.", "Она подчеркнула важность безопасности."],
+          ["evidence", "[Э-ви-дэнс]", "доказательства, свидетельства", "There is no evidence of that.", "Этому нет доказательств."],
+          ["overcome", "[оу-вэ-КАМ]", "преодолевать", "She overcame her fear of flying.", "Она преодолела страх полётов."],
+          ["reveal", "[ри-ВИЛ]", "раскрывать, обнаруживать", "The report revealed several problems.", "Отчёт выявил несколько проблем."],
+          ["deliberately", "[ди-ЛИ-бэ-рэт-ли]", "намеренно, нарочно", "He deliberately ignored the question.", "Он намеренно проигнорировал вопрос."],
+          ["grateful", "[ГРЕЙТ-фл]", "благодарный", "I'm grateful for your help.", "Я благодарен за твою помощь."],
+          ["ensure", "[ин-ШО]", "обеспечивать, гарантировать", "Please ensure the door is locked.", "Пожалуйста, убедись, что дверь заперта."],
+          ["whereas", "[уэ-РЭЗ]", "тогда как, в то время как", "I like tea, whereas he prefers coffee.", "Я люблю чай, а он предпочитает кофе."]
+        ],
+        C1: [
+          ["ambiguous", "[эм-БИ-гью-эс]", "двусмысленный", "His answer was ambiguous.", "Его ответ был двусмысленным."],
+          ["inevitable", "[и-НЕ-ви-тэ-бл]", "неизбежный", "Change is often inevitable.", "Перемены часто неизбежны."],
+          ["substantial", "[сэб-СТЭН-шл]", "существенный, весомый", "They made substantial progress.", "Они добились существенного прогресса."],
+          ["subtle", "[СА-тл]", "тонкий, едва уловимый", "There is a subtle difference here.", "Здесь есть тонкое различие."],
+          ["comprehensive", "[ком-при-ХЕН-сив]", "всеобъемлющий, исчерпывающий", "This is a comprehensive guide.", "Это исчерпывающее руководство."],
+          ["undermine", "[ан-дэ-МАЙН]", "подрывать", "Rumours can undermine trust.", "Слухи могут подорвать доверие."],
+          ["feasible", "[ФИ-зэ-бл]", "осуществимый, выполнимый", "Is the plan financially feasible?", "Осуществим ли этот план финансово?"],
+          ["coherent", "[коу-ХИ-рэнт]", "связный, логичный", "She gave a coherent explanation.", "Она дала связное объяснение."],
+          ["fluctuate", "[ФЛАК-чу-эйт]", "колебаться (о ценах и т.п.)", "Prices fluctuate throughout the year.", "Цены колеблются в течение года."],
+          ["mitigate", "[МИ-ти-гейт]", "смягчать (последствия)", "Measures were taken to mitigate the risk.", "Были приняты меры для снижения риска."],
+          ["concise", "[кэн-САЙС]", "краткий, лаконичный", "Keep your summary concise.", "Сделай резюме кратким."],
+          ["plausible", "[ПЛО-зэ-бл]", "правдоподобный", "That sounds like a plausible theory.", "Это звучит как правдоподобная теория."],
+          ["scrutinise", "[СКРУ-ти-найз]", "тщательно изучать", "Lawyers scrutinised every clause.", "Юристы тщательно изучили каждый пункт."],
+          ["tenacious", "[тэ-НЕЙ-шэс]", "упорный, настойчивый", "She is tenacious and never gives up.", "Она упорная и никогда не сдаётся."],
+          ["unprecedented", "[ан-ПРЕ-си-ден-тид]", "беспрецедентный", "The company saw unprecedented growth.", "Компания показала беспрецедентный рост."],
+          ["advocate", "[ЭД-вэ-кейт]", "выступать за, отстаивать", "She advocates for equal rights.", "Она выступает за равные права."],
+          ["compelling", "[кэм-ПЕ-лин]", "убедительный, захватывающий", "He made a compelling argument.", "Он привёл убедительный довод."],
+          ["diminish", "[ди-МИ-ниш]", "уменьшать(ся), ослабевать", "The pain diminished over time.", "Со временем боль ослабла."],
+          ["notion", "[НОУ-шн]", "понятие, представление", "I have no notion of what he meant.", "Понятия не имею, что он имел в виду."],
+          ["inherent", "[ин-ХИ-рэнт]", "присущий, неотъемлемый", "Risk is inherent in any business.", "Риск присущ любому бизнесу."],
+          ["discrepancy", "[ди-СКРЕ-пэн-си]", "расхождение, несоответствие", "There's a discrepancy in the figures.", "В цифрах есть расхождение."],
+          ["meticulous", "[мэ-ТИ-кью-лэс]", "скрупулёзный, дотошный", "He keeps meticulous records.", "Он ведёт скрупулёзные записи."],
+          ["endeavour", "[ин-ДЕ-вэ]", "стремление, попытка; стараться", "We will endeavour to reply quickly.", "Мы постараемся ответить быстро."],
+          ["pragmatic", "[прэг-МЭ-тик]", "прагматичный", "We need a pragmatic approach.", "Нам нужен прагматичный подход."],
+          ["arguably", "[А-гью-эб-ли]", "пожалуй, возможно", "It is arguably the best film this year.", "Это, пожалуй, лучший фильм года."]
+        ]
+      }
+    };
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
