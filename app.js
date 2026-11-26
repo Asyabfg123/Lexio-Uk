@@ -74,8 +74,14 @@
     flipped: false,
     answered: false,
     selectedIdx: null,
-    options: []
+    options: [],
+    history: []
   };
+
+  let autoAdvanceTimer = null;
+  function clearAutoAdvance() {
+    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  }
 
   const blocks = () => BLOCKS[state.level];
   function knownIn(list) { return list.filter(w => state.known.has(w.id)).length; }
@@ -119,11 +125,24 @@
   }
 
   function nextWord() {
+    clearAutoAdvance();
+    if (state.word) state.history.push(state.word);
     if (!state.queue.length) buildQueue();
     if (state.word && state.queue.length > 1 && state.queue[0].id === state.word.id) {
       state.queue.push(state.queue.shift());
     }
     state.word = state.queue.shift();
+    state.flipped = false;
+    state.answered = false;
+    state.selectedIdx = null;
+    state.options = [];
+  }
+
+  function prevWord() {
+    if (!state.history.length) return;
+    clearAutoAdvance();
+    if (state.word) state.queue.unshift(state.word);
+    state.word = state.history.pop();
     state.flipped = false;
     state.answered = false;
     state.selectedIdx = null;
@@ -241,7 +260,8 @@
         </div>
         <div class="hint">${state.flipped ? "Нажми на карточку, чтобы скрыть перевод" : "Нажми на карточку, чтобы увидеть перевод"}</div>
       </div>
-      <div class="actions">
+      <div class="actions${state.history.length ? " with-back" : ""}">
+        ${state.history.length ? `<button class="btn btn-back" id="backBtn" type="button" title="Предыдущее слово">←</button>` : ""}
         <button class="btn btn-hard" id="hardBtn" type="button">Ещё учу</button>
         <button class="btn btn-easy" id="easyBtn" type="button">Знаю</button>
       </div>`;
@@ -250,6 +270,8 @@
     $("flashcard").addEventListener("click", () => { state.flipped = !state.flipped; render(); });
     $("hardBtn").addEventListener("click", () => { markUnknown(w); requeue(w); nextWord(); render(); });
     $("easyBtn").addEventListener("click", () => { markKnown(w); nextWord(); render(); });
+    const backBtn = $("backBtn");
+    if (backBtn) backBtn.addEventListener("click", () => { prevWord(); render(); });
   }
 
   function renderQuiz(stage, w) {
@@ -273,9 +295,7 @@
         </div>
         <div class="options" id="options"></div>
         <div class="feedback">${feedback}</div>
-        ${state.answered ? `
-          ${ruToEn ? `<div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 ${w.en}</button></div>` : ""}
-          <button class="btn btn-primary" id="nextBtn" type="button">Следующее слово →</button>` : ""}
+        ${state.answered && ruToEn ? `<div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 ${w.en}</button></div>` : ""}
       </div>`;
 
     const sb = $("speakBtn");
@@ -294,18 +314,22 @@
       }
       b.addEventListener("click", () => {
         if (state.answered) return;
+        clearAutoAdvance();
         state.answered = true;
         state.selectedIdx = idx;
-        if (opt.isCorrect) markKnown(w);
+        const correct = opt.isCorrect;
+        if (correct) markKnown(w);
         else { markUnknown(w); requeue(w); }
         speak(w.en);
         render();
+        autoAdvanceTimer = setTimeout(() => {
+          autoAdvanceTimer = null;
+          nextWord();
+          render();
+        }, correct ? 700 : 1800);
       });
       list.appendChild(b);
     });
-
-    const nb = $("nextBtn");
-    if (nb) nb.addEventListener("click", () => { nextWord(); render(); });
   }
 
   function render() {
@@ -315,8 +339,10 @@
   }
 
   function restart() {
+    clearAutoAdvance();
     persist();
     state.word = null;
+    state.history = [];
     buildQueue();
     nextWord();
     render();
@@ -345,6 +371,7 @@
   $("modesBar").addEventListener("click", e => {
     const b = e.target.closest(".mode-btn");
     if (!b) return;
+    clearAutoAdvance();
     state.mode = b.dataset.mode;
     persist();
     state.flipped = false;
