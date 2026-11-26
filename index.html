@@ -26,6 +26,8 @@
       </div>
     </div>
 
+    <div class="levels" id="levelsBar" style="grid-template-columns: repeat(5, 1fr)"></div>
+
     <div class="block-bar">
       <button class="pill-btn arrow" id="prevBlock" type="button" aria-label="Предыдущий блок">‹</button>
       <select id="blockSelect" class="block-select" aria-label="Блок слов"></select>
@@ -44,11 +46,14 @@
     </div>
 
     <div id="stage"></div>
-    <div class="footer-note">Слова идут от самых частых к редким · заглавными буквами выделен ударный слог</div>
+    <div class="footer-note">Внутри уровня слова идут от частых к редким · заглавными буквами выделен ударный слог</div>
   </div>
 
   <script src="words-01.js"></script>
   <script src="words-02.js"></script>
+  <script src="words-03.js"></script>
+  <script src="words-04.js"></script>
+  <script src="levels.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

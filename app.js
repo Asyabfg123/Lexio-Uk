@@ -1,23 +1,48 @@
-// LexiGo — одно приложение, общий список слов от частых к редким, блоками по 100.
-// Слова лежат в words-NN.js (по 250 штук): каждый файл добавляет строки в window.LEXI_WORDS.
-// Формат строки: [английское слово, транскрипция с ударением, перевод, пример EN, пример RU]
+// LexiGo — одно приложение, слова разбиты по уровням A1–C1, внутри уровня — блоки по 100.
+// Слова лежат в words-NN.js. Формат строки:
+// [английское слово, транскрипция, перевод, пример EN, пример RU, уровень (необязательно)]
+// Уровень берётся из строки, иначе из levels.js (window.LEXI_LEVELS), иначе A1.
 (function () {
   "use strict";
 
   const STORAGE = "lexigo_all_v1";
   const BLOCK = 100;
+  const LEVELS = [
+    { id: "A1", title: "Начальный" },
+    { id: "A2", title: "Элементарный" },
+    { id: "B1", title: "Средний" },
+    { id: "B2", title: "Выше среднего" },
+    { id: "C1", title: "Продвинутый" }
+  ];
 
   // ---------- Словарь ----------
+  const levelOf = {};
+  const map = window.LEXI_LEVELS || {};
+  for (const lv of Object.keys(map)) {
+    for (const w of map[lv].split("|")) if (w.trim()) levelOf[w.trim().toLowerCase()] = lv;
+  }
+
   const WORDS = [];
   const seen = new Set();
   for (const r of window.LEXI_WORDS || []) {
     const id = r[0].toLowerCase();
     if (seen.has(id)) continue; // дубли пропускаем
     seen.add(id);
-    WORDS.push({ id, n: WORDS.length + 1, en: r[0], tr: r[1], ru: r[2], exEn: r[3] || "", exRu: r[4] || "" });
+    WORDS.push({
+      id, en: r[0], tr: r[1], ru: r[2], exEn: r[3] || "", exRu: r[4] || "",
+      level: r[5] || levelOf[id] || "A1"
+    });
   }
-  const BLOCKS = [];
-  for (let i = 0; i < WORDS.length; i += BLOCK) BLOCKS.push(WORDS.slice(i, i + BLOCK));
+  const BY_LEVEL = {};
+  for (const l of LEVELS) BY_LEVEL[l.id] = [];
+  for (const w of WORDS) (BY_LEVEL[w.level] || BY_LEVEL.A1).push(w);
+  const BLOCKS = {};
+  for (const l of LEVELS) {
+    BLOCKS[l.id] = [];
+    const list = BY_LEVEL[l.id];
+    list.forEach((w, i) => { w.n = i + 1; });
+    for (let i = 0; i < list.length; i += BLOCK) BLOCKS[l.id].push(list.slice(i, i + BLOCK));
+  }
 
   // ---------- Хранилище ----------
   function readJSON(key) {
@@ -35,7 +60,8 @@
   }
 
   const state = {
-    block: 0,
+    level: "A1",
+    blockByLevel: saved.blockByLevel || {},
     mode: ["cards", "ru2en", "en2ru"].includes(saved.mode) ? saved.mode : "cards",
     lang: saved.lang === "en-US" ? "en-US" : "en-GB",
     known: new Set((saved.known || []).filter(id => seen.has(id))),
@@ -47,17 +73,26 @@
     options: []
   };
 
-  function knownIn(block) { return BLOCKS[block].filter(w => state.known.has(w.id)).length; }
-  function firstUnfinished() {
-    for (let i = 0; i < BLOCKS.length; i++) if (knownIn(i) < BLOCKS[i].length) return i;
+  const blocks = () => BLOCKS[state.level];
+  function knownIn(list) { return list.filter(w => state.known.has(w.id)).length; }
+  function firstUnfinished(level) {
+    const b = BLOCKS[level];
+    for (let i = 0; i < b.length; i++) if (knownIn(b[i]) < b[i].length) return i;
     return 0;
   }
-  state.block = Number.isInteger(saved.block) && BLOCKS[saved.block] ? saved.block : firstUnfinished();
+  function blockIdx() {
+    const i = state.blockByLevel[state.level];
+    return Number.isInteger(i) && blocks()[i] ? i : firstUnfinished(state.level);
+  }
+
+  const firstFilled = (LEVELS.find(l => BY_LEVEL[l.id].length) || LEVELS[0]).id;
+  state.level = BY_LEVEL[saved.level] && BY_LEVEL[saved.level].length ? saved.level : firstFilled;
 
   function persist() {
     try {
       localStorage.setItem(STORAGE, JSON.stringify({
-        block: state.block, mode: state.mode, lang: state.lang, known: [...state.known]
+        level: state.level, blockByLevel: state.blockByLevel,
+        mode: state.mode, lang: state.lang, known: [...state.known]
       }));
     } catch (e) { /* приватный режим — просто не сохраняем */ }
   }
@@ -74,7 +109,7 @@
 
   // Очередь блока: сначала невыученные, потом выученные — для повторения
   function buildQueue() {
-    const pool = BLOCKS[state.block];
+    const pool = blocks()[blockIdx()];
     state.queue = shuffle(pool.filter(w => !state.known.has(w.id)))
       .concat(shuffle(pool.filter(w => state.known.has(w.id))));
   }
@@ -95,14 +130,16 @@
   function markKnown(w) { state.known.add(w.id); persist(); }
   function markUnknown(w) { state.known.delete(w.id); persist(); }
 
-  // Неправильные варианты — из того же и соседних блоков, чтобы сложность была похожей
+  // Неправильные варианты — из того же уровня (сначала из ближних блоков)
   function buildOptions(word, mode) {
     const key = mode === "ru2en" ? "en" : "ru";
+    const b = blockIdx();
     const near = [];
-    for (let b = state.block - 1; b <= state.block + 1; b++) if (BLOCKS[b]) near.push(...BLOCKS[b]);
+    for (let i = b - 1; i <= b + 1; i++) if (blocks()[i]) near.push(...blocks()[i]);
+    const pool = shuffle(near).concat(shuffle(WORDS));
     const used = new Set([word[key]]);
     const picks = [];
-    for (const w of shuffle(near)) {
+    for (const w of pool) {
       if (picks.length === 3) break;
       if (w.id === word.id || used.has(w[key])) continue;
       used.add(w[key]);
@@ -152,23 +189,33 @@
   const $ = id => document.getElementById(id);
 
   function blockLabel(i) {
+    const list = blocks()[i];
     const from = i * BLOCK + 1;
-    const to = from + BLOCKS[i].length - 1;
-    const k = knownIn(i);
-    return `Слова ${from}–${to} · ${k === BLOCKS[i].length ? "✓" : k + "/" + BLOCKS[i].length}`;
+    const to = from + list.length - 1;
+    const k = knownIn(list);
+    return `Слова ${from}–${to} · ${k === list.length ? "✓" : k + "/" + list.length}`;
   }
 
   function renderChrome() {
-    const sel = $("blockSelect");
-    sel.innerHTML = BLOCKS.map((_, i) => `<option value="${i}">${blockLabel(i)}</option>`).join("");
-    sel.value = String(state.block);
-    $("prevBlock").disabled = state.block === 0;
-    $("nextBlock").disabled = state.block === BLOCKS.length - 1;
+    document.querySelectorAll(".level-btn").forEach(b => {
+      const id = b.dataset.level;
+      const list = BY_LEVEL[id];
+      b.classList.toggle("active", id === state.level);
+      b.disabled = !list.length;
+      b.querySelector("small").textContent = list.length ? `${knownIn(list)}/${list.length}` : "скоро";
+    });
 
-    const k = knownIn(state.block);
-    const total = BLOCKS[state.block].length;
-    $("progressText").textContent = `Блок: ${k} / ${total}`;
-    $("progressFill").style.width = `${(k / total) * 100}%`;
+    const sel = $("blockSelect");
+    const bi = blockIdx();
+    sel.innerHTML = blocks().map((_, i) => `<option value="${i}">${blockLabel(i)}</option>`).join("");
+    sel.value = String(bi);
+    $("prevBlock").disabled = bi === 0;
+    $("nextBlock").disabled = bi === blocks().length - 1;
+
+    const list = blocks()[bi];
+    const k = knownIn(list);
+    $("progressText").textContent = `Блок: ${k} / ${list.length}`;
+    $("progressFill").style.width = `${(k / list.length) * 100}%`;
     $("totalBadge").textContent = `${state.known.size} / ${WORDS.length}`;
     $("accentBtn").textContent = state.lang === "en-GB" ? "🇬🇧 UK" : "🇺🇸 US";
     document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === state.mode));
@@ -178,7 +225,7 @@
     stage.innerHTML = `
       <div class="flashcard" id="flashcard">
         <div>
-          <div class="label">№ ${w.n}${state.known.has(w.id) ? " · повторение" : ""}</div>
+          <div class="label">${w.level} · № ${w.n}${state.known.has(w.id) ? " · повторение" : ""}</div>
           <div class="word-en">${w.en}</div>
           <div class="ru-trans">${w.tr}</div>
           <div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 Прослушать</button></div>
@@ -263,9 +310,7 @@
     else renderQuiz($("stage"), state.word);
   }
 
-  function goToBlock(i) {
-    if (!BLOCKS[i] || i === state.block) return;
-    state.block = i;
+  function restart() {
     persist();
     state.word = null;
     buildQueue();
@@ -273,10 +318,25 @@
     render();
   }
 
+  function goToBlock(i) {
+    if (!blocks()[i] || i === blockIdx()) return;
+    state.blockByLevel[state.level] = i;
+    restart();
+  }
+
   // ---------- Управление ----------
+  $("levelsBar").innerHTML = LEVELS.map(l =>
+    `<button class="level-btn" data-level="${l.id}" type="button">${l.id}<small></small></button>`).join("");
+  $("levelsBar").addEventListener("click", e => {
+    const b = e.target.closest(".level-btn");
+    if (!b || b.disabled || b.dataset.level === state.level) return;
+    state.level = b.dataset.level;
+    restart();
+  });
+
   $("blockSelect").addEventListener("change", e => goToBlock(Number(e.target.value)));
-  $("prevBlock").addEventListener("click", () => goToBlock(state.block - 1));
-  $("nextBlock").addEventListener("click", () => goToBlock(state.block + 1));
+  $("prevBlock").addEventListener("click", () => goToBlock(blockIdx() - 1));
+  $("nextBlock").addEventListener("click", () => goToBlock(blockIdx() + 1));
 
   $("modesBar").addEventListener("click", e => {
     const b = e.target.closest(".mode-btn");
@@ -298,14 +358,12 @@
   });
 
   $("resetBtn").addEventListener("click", () => {
-    const from = state.block * BLOCK + 1;
-    if (!confirm(`Сбросить прогресс слов ${from}–${from + BLOCKS[state.block].length - 1}?`)) return;
-    BLOCKS[state.block].forEach(w => state.known.delete(w.id));
-    persist();
-    state.word = null;
-    buildQueue();
-    nextWord();
-    render();
+    const bi = blockIdx();
+    const from = bi * BLOCK + 1;
+    const list = blocks()[bi];
+    if (!confirm(`Сбросить прогресс ${state.level}, слова ${from}–${from + list.length - 1}?`)) return;
+    list.forEach(w => state.known.delete(w.id));
+    restart();
   });
 
   if (!WORDS.length) {
