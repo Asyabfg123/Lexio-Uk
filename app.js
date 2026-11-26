@@ -24,10 +24,14 @@
 
   const WORDS = [];
   const seen = new Set();
+  const enById = {};
   for (const r of window.LEXI_WORDS || []) {
-    const id = r[0].toLowerCase();
-    if (seen.has(id)) continue; // дубли пропускаем
+    let id = r[0].toLowerCase();
+    // "may" и "May" — разные слова; настоящие дубли пропускаем
+    if (seen.has(id) && enById[id] !== r[0]) id = r[0];
+    if (seen.has(id)) continue;
     seen.add(id);
+    enById[id] = r[0];
     WORDS.push({
       id, en: r[0], tr: r[1], ru: r[2], exEn: r[3] || "", exRu: r[4] || "",
       level: r[5] || levelOf[id] || "A1"
