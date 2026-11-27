@@ -101,6 +101,28 @@ button { font-family: inherit; }
 .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .mode-btn { font-size: 12px; font-weight: 600; }
 .mode-btn.active { background: var(--card-2); color: #fff; border-color: var(--accent-soft); }
+.mode-count {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 700;
+}
+.study-info {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+.quiz-card .btn-easy { width: 100%; }
 
 .progress-wrap { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
 .progress-bar { flex: 1; height: 7px; background: var(--card); border-radius: 999px; overflow: hidden; }

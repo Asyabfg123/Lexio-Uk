@@ -73,8 +73,12 @@
     mode: ["cards", "ru2en", "en2ru"].includes(saved.mode) ? saved.mode : "cards",
     lang: saved.lang === "en-US" ? "en-US" : "en-GB",
     known: new Set((saved.known || []).filter(id => seen.has(id))),
+    // Слова, отмеченные в карточках «Ещё учу», — только они попадают в тесты
+    study: new Set((saved.study || []).filter(id => seen.has(id))),
     queue: [],
     word: null,
+    qQueue: [],
+    qWord: null,
     flipped: false,
     answered: false,
     selectedIdx: null,
@@ -100,7 +104,7 @@
     try {
       localStorage.setItem(STORAGE, JSON.stringify({
         level: state.level, blockByLevel: state.blockByLevel,
-        mode: state.mode, lang: state.lang, known: [...state.known]
+        mode: state.mode, lang: state.lang, known: [...state.known], study: [...state.study]
       }));
     } catch (e) { /* приватный режим — просто не сохраняем */ }
   }
@@ -135,16 +139,28 @@
   }
 
   function requeue(word) { state.queue.splice(Math.min(3, state.queue.length), 0, word); }
-  function markKnown(w) { state.known.add(w.id); persist(); }
-  function markUnknown(w) { state.known.delete(w.id); persist(); }
+  function markKnown(w) { state.known.add(w.id); state.study.delete(w.id); persist(); }
+  function markUnknown(w) { state.known.delete(w.id); state.study.add(w.id); persist(); }
 
-  // Неправильные варианты — из того же уровня (сначала из ближних блоков)
+  // ---------- Тесты: только слова из списка «Ещё учу» ----------
+  const studyWords = () => WORDS.filter(w => state.study.has(w.id));
+  function nextQuiz() {
+    state.qQueue = state.qQueue.filter(w => state.study.has(w.id));
+    if (!state.qQueue.length) state.qQueue = shuffle(studyWords());
+    if (state.qWord && state.qQueue.length > 1 && state.qQueue[0].id === state.qWord.id) {
+      state.qQueue.push(state.qQueue.shift());
+    }
+    state.qWord = state.qQueue.shift() || null;
+    state.answered = false;
+    state.selectedIdx = null;
+    state.options = [];
+  }
+  function requeueQuiz(word) { state.qQueue.splice(Math.min(3, state.qQueue.length), 0, word); }
+
+  // Неправильные варианты — из того же уровня, что и слово
   function buildOptions(word, mode) {
     const key = mode === "ru2en" ? "en" : "ru";
-    const b = blockIdx();
-    const near = [];
-    for (let i = b - 1; i <= b + 1; i++) if (blocks()[i]) near.push(...blocks()[i]);
-    const pool = shuffle(near).concat(shuffle(WORDS));
+    const pool = shuffle(BY_LEVEL[word.level] || []).concat(shuffle(WORDS));
     const used = new Set([word[key]]);
     const picks = [];
     for (const w of pool) {
@@ -226,14 +242,35 @@
     $("progressFill").style.width = `${(k / list.length) * 100}%`;
     $("totalBadge").textContent = `${state.known.size} / ${WORDS.length}`;
     $("accentBtn").textContent = state.lang === "en-GB" ? "🇬🇧 UK" : "🇺🇸 US";
-    document.querySelectorAll(".mode-btn").forEach(b => b.classList.toggle("active", b.dataset.mode === state.mode));
+    const n = state.study.size;
+    const labels = { cards: "1. Карточки", ru2en: "2. Рус → Англ", en2ru: "3. Англ → Рус" };
+    document.querySelectorAll(".mode-btn").forEach(b => {
+      b.classList.toggle("active", b.dataset.mode === state.mode);
+      b.innerHTML = labels[b.dataset.mode] + (b.dataset.mode === "cards" ? "" : `<small class="mode-count">${n}</small>`);
+    });
+
+    // В тестах уровни и блоки не нужны — показываем, сколько слов на изучении
+    const quiz = state.mode !== "cards";
+    $("levelsBar").style.display = quiz ? "none" : "";
+    document.querySelector(".block-bar").style.display = quiz ? "none" : "";
+    document.querySelector(".progress-wrap").style.display = quiz ? "none" : "";
+    $("studyInfo").style.display = quiz ? "" : "none";
+    $("studyInfo").textContent = `На изучении: ${n} ${plural(n, "слово", "слова", "слов")} · сюда попадают слова, отмеченные «Ещё учу»`;
+    $("resetBtn").textContent = quiz ? "Очистить" : "Сброс";
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
   }
 
   function renderCards(stage, w) {
     stage.innerHTML = `
       <div class="flashcard" id="flashcard">
         <div>
-          <div class="label">${w.level} · № ${w.n}${state.known.has(w.id) ? " · повторение" : ""}</div>
+          <div class="label">${w.level} · № ${w.n}${state.study.has(w.id) ? " · на изучении" : state.known.has(w.id) ? " · повторение" : ""}</div>
           <div class="word-en">${w.en}</div>
           ${ipaHtml(w)}
           <div class="ru-trans">${w.tr}</div>
@@ -259,6 +296,16 @@
 
   function renderQuiz(stage, w) {
     const ruToEn = state.mode === "ru2en";
+    if (!w) {
+      stage.innerHTML = `
+        <div class="quiz-card">
+          <div class="label">Пока пусто</div>
+          <div class="feedback">В тесты попадают только слова, которые ты отметил «Ещё учу» в карточках. Отметь несколько слов — и они появятся здесь.</div>
+          <button class="btn btn-primary" id="toCardsBtn" type="button">Перейти к карточкам</button>
+        </div>`;
+      $("toCardsBtn").addEventListener("click", () => setMode("cards"));
+      return;
+    }
     if (!state.options.length) state.options = buildOptions(w, state.mode);
 
     let feedback = "Выбери один из 4 вариантов";
@@ -281,7 +328,8 @@
         <div class="feedback">${feedback}</div>
         ${state.answered ? `
           ${ruToEn ? `<div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 ${w.en}</button></div>` : ""}
-          <button class="btn btn-primary" id="nextBtn" type="button">Следующее слово →</button>` : ""}
+          <button class="btn btn-primary" id="nextBtn" type="button">Следующее слово →</button>
+          ${state.options[state.selectedIdx].isCorrect ? `<button class="btn btn-easy" id="learnedBtn" type="button">✓ Выучил — убрать из изучения</button>` : ""}` : ""}
       </div>`;
 
     const sb = $("speakBtn");
@@ -302,8 +350,7 @@
         if (state.answered) return;
         state.answered = true;
         state.selectedIdx = idx;
-        if (opt.isCorrect) markKnown(w);
-        else { markUnknown(w); requeue(w); }
+        if (!opt.isCorrect) requeueQuiz(w); // ошибка — слово вернётся через пару вопросов
         speak(w.en);
         render();
       });
@@ -311,13 +358,26 @@
     });
 
     const nb = $("nextBtn");
-    if (nb) nb.addEventListener("click", () => { nextWord(); render(); });
+    if (nb) nb.addEventListener("click", () => { nextQuiz(); render(); });
+    const lb = $("learnedBtn");
+    if (lb) lb.addEventListener("click", () => { markKnown(w); nextQuiz(); render(); });
   }
 
   function render() {
     renderChrome();
     if (state.mode === "cards") renderCards($("stage"), state.word);
-    else renderQuiz($("stage"), state.word);
+    else renderQuiz($("stage"), state.qWord);
+  }
+
+  function setMode(mode) {
+    state.mode = mode;
+    persist();
+    state.flipped = false;
+    if (mode !== "cards" && (!state.qWord || !state.study.has(state.qWord.id))) nextQuiz();
+    state.answered = false;
+    state.selectedIdx = null;
+    state.options = [];
+    render();
   }
 
   function restart() {
@@ -351,13 +411,7 @@
   $("modesBar").addEventListener("click", e => {
     const b = e.target.closest(".mode-btn");
     if (!b) return;
-    state.mode = b.dataset.mode;
-    persist();
-    state.flipped = false;
-    state.answered = false;
-    state.selectedIdx = null;
-    state.options = [];
-    render();
+    setMode(b.dataset.mode);
   });
 
   $("accentBtn").addEventListener("click", () => {
@@ -368,6 +422,15 @@
   });
 
   $("resetBtn").addEventListener("click", () => {
+    if (state.mode !== "cards") {
+      if (!state.study.size || !confirm(`Очистить список изучения (${state.study.size})?`)) return;
+      state.study.clear();
+      persist();
+      state.qQueue = [];
+      nextQuiz();
+      render();
+      return;
+    }
     const bi = blockIdx();
     const from = bi * BLOCK + 1;
     const list = blocks()[bi];
@@ -382,5 +445,6 @@
   }
   buildQueue();
   nextWord();
+  nextQuiz();
   render();
 })();
