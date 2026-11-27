@@ -1,0 +1,26 @@
+// Британская транскрипция IPA, слова из words-10.
+Object.assign(window.LEXI_IPA = window.LEXI_IPA || {}, {
+"accent":"ˈæksənt","afterwards":"ˈɑːftəwədz","aid":"eɪd","amazed":"əˈmeɪzd","amused":"əˈmjuːzd","analyse":"ˈænəlaɪz","anger":"ˈæŋɡə","ankle":"ˈæŋkl","announcement":"əˈnaʊnsmənt","anxious":"ˈæŋkʃəs",
+"appeal":"əˈpiːl","approve":"əˈpruːv","attach":"əˈtætʃ","attraction":"əˈtrækʃn","authority":"ɔːˈθɒrəti","backwards":"ˈbækwədz","bacteria":"bækˈtɪəriə","beauty":"ˈbjuːti","bend":"bend","bitter":"ˈbɪtə",
+"blank":"blæŋk","brick":"brɪk","brilliant":"ˈbrɪliənt","broadcast":"ˈbrɔːdkɑːst","bubble":"ˈbʌbl","bunch":"bʌntʃ","burst":"bɜːst","cable":"ˈkeɪbl","calculate":"ˈkælkjuleɪt","calorie":"ˈkæləri",
+"category":"ˈkætəɡəri","cave":"keɪv","celebration":"ˌselɪˈbreɪʃn","certificate":"səˈtɪfɪkət","chart":"tʃɑːt","chase":"tʃeɪs","cheek":"tʃiːk","cheerful":"ˈtʃɪəfl","chief":"tʃiːf","choir":"ˈkwaɪə",
+"cigarette":"ˌsɪɡəˈret","clinic":"ˈklɪnɪk","cloth":"klɒθ","column":"ˈkɒləm","comfort":"ˈkʌmfət","comic":"ˈkɒmɪk","conference":"ˈkɒnfərəns","conflict":"ˈkɒnflɪkt","consist":"kənˈsɪst","constant":"ˈkɒnstənt",
+"construction":"kənˈstrʌkʃn","consumer":"kənˈsjuːmə","continent":"ˈkɒntɪnənt","convenient":"kənˈviːniənt","cottage":"ˈkɒtɪdʒ","council":"ˈkaʊnsl","counter":"ˈkaʊntə","courage":"ˈkʌrɪdʒ","crack":"kræk","creature":"ˈkriːtʃə",
+"critic":"ˈkrɪtɪk","critical":"ˈkrɪtɪkl","criticise":"ˈkrɪtɪsaɪz","cupboard":"ˈkʌbəd","curious":"ˈkjʊəriəs","dairy":"ˈdeəri","dare":"deə","darkness":"ˈdɑːknəs","deadline":"ˈdedlaɪn","deaf":"def",
+"deeply":"ˈdiːpli","defend":"dɪˈfend","delete":"dɪˈliːt","democracy":"dɪˈmɒkrəsi","demonstrate":"ˈdemənstreɪt","description":"dɪˈskrɪpʃn","desperate":"ˈdespərət","determined":"dɪˈtɜːmɪnd","development":"dɪˈveləpmənt","dig":"dɪɡ",
+"dirt":"dɜːt","disabled":"dɪsˈeɪbld","discipline":"ˈdɪsəplɪn","district":"ˈdɪstrɪkt","dive":"daɪv","dramatic":"drəˈmætɪk","drown":"draʊn","dust":"dʌst","duty":"ˈdjuːti","eager":"ˈiːɡə",
+"earthquake":"ˈɜːθkweɪk","elbow":"ˈelbəʊ","elegant":"ˈelɪɡənt","element":"ˈelɪmənt","elsewhere":"ˌelsˈweə","empire":"ˈempaɪə","enthusiastic":"ɪnˌθjuːziˈæstɪk","equally":"ˈiːkwəli","era":"ˈɪərə","establish":"ɪˈstæblɪʃ",
+"estimate":"ˈestɪmət","examination":"ɪɡˌzæmɪˈneɪʃn","exception":"ɪkˈsepʃn","excuse":"ɪkˈskjuːs","exhausted":"ɪɡˈzɔːstɪd","existence":"ɪɡˈzɪstəns","experienced":"ɪkˈspɪəriənst","fairly":"ˈfeəli","fake":"feɪk","fantasy":"ˈfæntəsi",
+"fare":"feə","fascinating":"ˈfæsɪneɪtɪŋ","fashionable":"ˈfæʃnəbl","fasten":"ˈfɑːsn","favour":"ˈfeɪvə","feather":"ˈfeðə","fellow":"ˈfeləʊ","fireworks":"ˈfaɪəwɜːks","firstly":"ˈfɜːstli","fixed":"fɪkst",
+"flash":"flæʃ","float":"fləʊt","flow":"fləʊ","fluent":"ˈfluːənt","folk":"fəʊk","fool":"fuːl","forbid":"fəˈbɪd","forehead":"ˈfɒrɪd","forever":"fərˈevə","fortunately":"ˈfɔːtʃənətli",
+"forward":"ˈfɔːwəd","frame":"freɪm","frequently":"ˈfriːkwəntli","frightening":"ˈfraɪtnɪŋ","frustrated":"frʌˈstreɪtɪd","fur":"fɜː","furious":"ˈfjʊəriəs","gang":"ɡæŋ","generally":"ˈdʒenrəli","genius":"ˈdʒiːniəs",
+"glance":"ɡlɑːns","golden":"ˈɡəʊldən","gossip":"ˈɡɒsɪp","grab":"ɡræb","gradually":"ˈɡrædʒuəli","greet":"ɡriːt","gun":"ɡʌn","hairdresser":"ˈheədresə","hammer":"ˈhæmə","harbour":"ˈhɑːbə",
+"harmful":"ˈhɑːmfl","headquarters":"ˌhedˈkwɔːtəz","heal":"hiːl","helmet":"ˈhelmɪt","hidden":"ˈhɪdn","hike":"haɪk","hint":"hɪnt","honour":"ˈɒnə","hopefully":"ˈhəʊpfəli","horizon":"həˈraɪzn",
+"identical":"aɪˈdentɪkl","immigrant":"ˈɪmɪɡrənt","impatient":"ɪmˈpeɪʃnt","impossible":"ɪmˈpɒsəbl","incredible":"ɪnˈkredəbl","indeed":"ɪnˈdiːd","infection":"ɪnˈfekʃn","informal":"ɪnˈfɔːml","ingredient":"ɪnˈɡriːdiənt","injured":"ˈɪndʒəd",
+"insist":"ɪnˈsɪst","instant":"ˈɪnstənt","insult":"ɪnˈsʌlt","interrupt":"ˌɪntəˈrʌpt","jealous":"ˈdʒeləs","joy":"dʒɔɪ","junior":"ˈdʒuːniə","kingdom":"ˈkɪŋdəm","ladder":"ˈlædə","lane":"leɪn",
+"laughter":"ˈlɑːftə","lawn":"lɔːn","leak":"liːk","lifetime":"ˈlaɪftaɪm","lively":"ˈlaɪvli","loose":"luːs","lottery":"ˈlɒtəri","loyal":"ˈlɔɪəl","magic":"ˈmædʒɪk","make-up":"ˈmeɪk ʌp",
+"marathon":"ˈmærəθən","mechanic":"məˈkænɪk","medal":"ˈmedl","melt":"melt","mild":"maɪld","miserable":"ˈmɪzrəbl","monster":"ˈmɒnstə","monument":"ˈmɒnjumənt","mud":"mʌd","mysterious":"mɪˈstɪəriəs",
+"nail":"neɪl","nasty":"ˈnɑːsti","nest":"nest","nod":"nɒd","nonsense":"ˈnɒnsns","occupation":"ˌɒkjuˈpeɪʃn","offend":"əˈfend","optimistic":"ˌɒptɪˈmɪstɪk","oxygen":"ˈɒksɪdʒən","panic":"ˈpænɪk",
+"paragraph":"ˈpærəɡrɑːf","parliament":"ˈpɑːləmənt","pause":"pɔːz","pension":"ˈpenʃn","pill":"pɪl","pipe":"paɪp","pity":"ˈpɪti","pond":"pɒnd","portrait":"ˈpɔːtreɪt","pot":"pɒt",
+"powder":"ˈpaʊdə","pray":"preɪ","pregnant":"ˈpreɡnənt","pronounce":"prəˈnaʊns","pronunciation":"prəˌnʌnsiˈeɪʃn","qualified":"ˈkwɒlɪfaɪd","queen":"kwiːn","quit":"kwɪt","rainbow":"ˈreɪnbəʊ","random":"ˈrændəm"
+});

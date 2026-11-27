@@ -136,6 +136,16 @@ button { font-family: inherit; }
 
 .center { display: flex; justify-content: center; }
 
+.ipa {
+  font-family: "Charis SIL", "Doulos SIL", "Lucida Sans Unicode", "Segoe UI", -apple-system, sans-serif;
+  font-size: 19px;
+  color: #e2e8f0;
+  text-align: center;
+  margin-bottom: 4px;
+  letter-spacing: 0.01em;
+}
+.ipa-inline { font-family: "Lucida Sans Unicode", "Segoe UI", -apple-system, sans-serif; color: #e2e8f0; }
+
 .audio-btn {
   display: inline-flex;
   align-items: center;
@@ -158,12 +168,10 @@ button { font-family: inherit; }
 .hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: 14px; }
 
 .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
-.actions.with-back { grid-template-columns: 52px 1fr 1fr; }
 
 .btn { border: none; border-radius: 16px; padding: 15px 14px; font-size: 15px; font-weight: 700; cursor: pointer; }
 .btn-hard { background: rgba(239, 68, 68, 0.16); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.35); }
 .btn-easy { background: rgba(34, 197, 94, 0.16); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.35); }
-.btn-back { background: var(--card-2); color: #e2e8f0; border: 1px solid var(--border); padding: 15px 0; font-size: 18px; }
 .btn-primary { background: var(--accent); color: var(--accent-ink); width: 100%; }
 
 .quiz-card { display: flex; flex-direction: column; gap: 14px; }

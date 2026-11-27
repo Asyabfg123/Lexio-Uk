@@ -24,6 +24,9 @@
 
   const WORDS = [];
   const seen = new Set();
+  // Британская транскрипция IPA из ipa-NN.js (window.LEXI_IPA: слово → транскрипция без слешей)
+  const IPA = window.LEXI_IPA || {};
+  const ipaHtml = w => w.ipa ? `<div class="ipa">/${w.ipa}/</div>` : "";
   const enById = {};
   for (const r of window.LEXI_WORDS || []) {
     let id = r[0].toLowerCase();
@@ -34,7 +37,8 @@
     enById[id] = r[0];
     WORDS.push({
       id, en: r[0], tr: r[1], ru: r[2], exEn: r[3] || "", exRu: r[4] || "",
-      level: r[5] || levelOf[id] || "A1"
+      level: r[5] || levelOf[id] || "A1",
+      ipa: IPA[r[0]] || IPA[id] || ""
     });
   }
   const BY_LEVEL = {};
@@ -74,14 +78,8 @@
     flipped: false,
     answered: false,
     selectedIdx: null,
-    options: [],
-    history: []
+    options: []
   };
-
-  let autoAdvanceTimer = null;
-  function clearAutoAdvance() {
-    if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
-  }
 
   const blocks = () => BLOCKS[state.level];
   function knownIn(list) { return list.filter(w => state.known.has(w.id)).length; }
@@ -125,24 +123,11 @@
   }
 
   function nextWord() {
-    clearAutoAdvance();
-    if (state.word) state.history.push(state.word);
     if (!state.queue.length) buildQueue();
     if (state.word && state.queue.length > 1 && state.queue[0].id === state.word.id) {
       state.queue.push(state.queue.shift());
     }
     state.word = state.queue.shift();
-    state.flipped = false;
-    state.answered = false;
-    state.selectedIdx = null;
-    state.options = [];
-  }
-
-  function prevWord() {
-    if (!state.history.length) return;
-    clearAutoAdvance();
-    if (state.word) state.queue.unshift(state.word);
-    state.word = state.history.pop();
     state.flipped = false;
     state.answered = false;
     state.selectedIdx = null;
@@ -170,7 +155,7 @@
     }
     return shuffle([word].concat(picks)).map(w => ({
       label: mode === "ru2en" ? w.en : w.ru,
-      sub: mode === "ru2en" ? w.tr : "",
+      sub: mode === "ru2en" ? (w.ipa ? `/${w.ipa}/ · ` : "") + w.tr : "",
       isCorrect: w.id === word.id
     }));
   }
@@ -250,6 +235,7 @@
         <div>
           <div class="label">${w.level} · № ${w.n}${state.known.has(w.id) ? " · повторение" : ""}</div>
           <div class="word-en">${w.en}</div>
+          ${ipaHtml(w)}
           <div class="ru-trans">${w.tr}</div>
           <div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 Прослушать</button></div>
           ${state.flipped ? `
@@ -260,8 +246,7 @@
         </div>
         <div class="hint">${state.flipped ? "Нажми на карточку, чтобы скрыть перевод" : "Нажми на карточку, чтобы увидеть перевод"}</div>
       </div>
-      <div class="actions${state.history.length ? " with-back" : ""}">
-        ${state.history.length ? `<button class="btn btn-back" id="backBtn" type="button" title="Предыдущее слово">←</button>` : ""}
+      <div class="actions">
         <button class="btn btn-hard" id="hardBtn" type="button">Ещё учу</button>
         <button class="btn btn-easy" id="easyBtn" type="button">Знаю</button>
       </div>`;
@@ -270,8 +255,6 @@
     $("flashcard").addEventListener("click", () => { state.flipped = !state.flipped; render(); });
     $("hardBtn").addEventListener("click", () => { markUnknown(w); requeue(w); nextWord(); render(); });
     $("easyBtn").addEventListener("click", () => { markKnown(w); nextWord(); render(); });
-    const backBtn = $("backBtn");
-    if (backBtn) backBtn.addEventListener("click", () => { prevWord(); render(); });
   }
 
   function renderQuiz(stage, w) {
@@ -281,7 +264,7 @@
     let feedback = "Выбери один из 4 вариантов";
     if (state.answered) {
       const ok = state.options[state.selectedIdx].isCorrect;
-      feedback = `${ok ? "✅ Верно!" : "❌ Правильно:"} <b>${w.en}</b> <span style="color:var(--accent-soft)">${w.tr}</span> — ${w.ru}`;
+      feedback = `${ok ? "✅ Верно!" : "❌ Правильно:"} <b>${w.en}</b>${w.ipa ? ` <span class="ipa-inline">/${w.ipa}/</span>` : ""} <span style="color:var(--accent-soft)">${w.tr}</span> — ${w.ru}`;
     }
 
     stage.innerHTML = `
@@ -290,12 +273,15 @@
           <div class="label">${ruToEn ? "Переведи на английский" : "Переведи на русский"}</div>
           <div class="quiz-word">${ruToEn ? w.ru : w.en}</div>
           ${!ruToEn ? `
+            ${ipaHtml(w)}
             <div class="ru-trans quiz-trans">${w.tr}</div>
             <div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 Прослушать</button></div>` : ""}
         </div>
         <div class="options" id="options"></div>
         <div class="feedback">${feedback}</div>
-        ${state.answered && ruToEn ? `<div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 ${w.en}</button></div>` : ""}
+        ${state.answered ? `
+          ${ruToEn ? `<div class="center"><button class="audio-btn" id="speakBtn" type="button">🔊 ${w.en}</button></div>` : ""}
+          <button class="btn btn-primary" id="nextBtn" type="button">Следующее слово →</button>` : ""}
       </div>`;
 
     const sb = $("speakBtn");
@@ -314,22 +300,18 @@
       }
       b.addEventListener("click", () => {
         if (state.answered) return;
-        clearAutoAdvance();
         state.answered = true;
         state.selectedIdx = idx;
-        const correct = opt.isCorrect;
-        if (correct) markKnown(w);
+        if (opt.isCorrect) markKnown(w);
         else { markUnknown(w); requeue(w); }
         speak(w.en);
         render();
-        autoAdvanceTimer = setTimeout(() => {
-          autoAdvanceTimer = null;
-          nextWord();
-          render();
-        }, correct ? 700 : 1800);
       });
       list.appendChild(b);
     });
+
+    const nb = $("nextBtn");
+    if (nb) nb.addEventListener("click", () => { nextWord(); render(); });
   }
 
   function render() {
@@ -339,10 +321,8 @@
   }
 
   function restart() {
-    clearAutoAdvance();
     persist();
     state.word = null;
-    state.history = [];
     buildQueue();
     nextWord();
     render();
@@ -371,7 +351,6 @@
   $("modesBar").addEventListener("click", e => {
     const b = e.target.closest(".mode-btn");
     if (!b) return;
-    clearAutoAdvance();
     state.mode = b.dataset.mode;
     persist();
     state.flipped = false;
